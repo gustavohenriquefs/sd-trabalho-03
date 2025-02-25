@@ -17,7 +17,7 @@ export default async function Home() {
             <AddClientDialog />
           </div>
           <Suspense fallback={<div>Loading clients...</div>}>
-            <ClientList clients={clients} />
+            <ClientList initialClients={clients} />
           </Suspense>
         </section>
 

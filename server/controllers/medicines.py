@@ -22,16 +22,15 @@ def remove_medicine(medicine_id: UUID):
     return {"message": "Medicine removed successfully"}
 
 
-@router.post("/prescribe/{medicine_id}")
-def prescribe_medicine(medicine_id: UUID):
-    clinic.prescribe_medicine(medicine_id)
+# prescribe one unit of medicine to an animal
+@router.post("/{medicine_id}/animals/{animal_id}")
+def prescribe_medicine(animal_id: UUID, medicine_id: UUID):
+    clinic.prescribe_medicine(animal_id, medicine_id, 1)
     return {"message": "Medicine prescribed successfully"}
 
 
 @router.get("/", response_model=List[Medicine])
 def get_stock():
     if not db.stock:
-        raise HTTPException(
-            status_code=404, detail="No medicines in stock"
-        )  # ✅ Correct way
+        raise HTTPException(status_code=404, detail="No medicines in stock")
     return list(db.stock.values())

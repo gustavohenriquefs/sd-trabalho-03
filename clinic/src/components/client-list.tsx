@@ -1,23 +1,28 @@
 "use client"
 
-import type { Client } from "../models/types"
+import type { Client, Medicine } from "../models/types"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import type { Animal } from "../models/types"
 import { Button } from "@/components/ui/button"
-import { useState } from "react"
-import { createAnimal } from "../controllers/api"
+import { useEffect, useState } from "react"
+import { createAnimal, getClients, getMedicines, prescribeMedicine } from "../controllers/api"
 import { UUID } from "crypto"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 interface ClientListProps {
-  clients: Client[]
+  initialClients: Client[]
 }
 
-export function AddAnimalDialog({ idOwner, isOpen, onClose }: { idOwner: UUID, isOpen: boolean, onClose: () => void }) {
+export function AddAnimalDialog({ idOwner, getClients }: { idOwner: UUID, getClients: () => void }) {
   const [name, setName] = useState("")
   const [type, setType] = useState<"dog" | "cat" | "rabbit">("dog")
   const [age, setAge] = useState("")
   const [breed, setBreed] = useState("")
+  const [isOpen, setIsOpen] = useState(false)
+
+  const onClose = () => {
+    setIsOpen(false)
+  }
 
   const handleAddAnimal = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -31,6 +36,9 @@ export function AddAnimalDialog({ idOwner, isOpen, onClose }: { idOwner: UUID, i
     }
 
     await createAnimal(newAnimal)
+
+    getClients()
+
     onClose()
   }
 
@@ -45,7 +53,7 @@ export function AddAnimalDialog({ idOwner, isOpen, onClose }: { idOwner: UUID, i
           <DialogTitle>Add New Animal</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleAddAnimal} className="flex flex-col space-y-4">
+        <form onSubmit={handleAddAnimal} className="flex flex-col space-y-4 gap-2">
           <label className="flex flex-col">
             <span>Name</span>
             <input className="border p-2 rounded" type="text" value={name} onChange={(e) => setName(e.target.value)} />
@@ -81,16 +89,17 @@ export function AddAnimalDialog({ idOwner, isOpen, onClose }: { idOwner: UUID, i
   )
 }
 
-export function ClientList({ clients }: ClientListProps) {
+export function ClientList({ initialClients }: ClientListProps) {
+  const [clients, setClients] = useState<Client[]>(initialClients || [])
   const [showAnimals, setShowAnimals] = useState<Record<string, boolean>>({})
-  const [showAddAnimal, setShowAddAnimal] = useState<Record<string, boolean>>({})
 
   const toggleShowAnimals = (id: string) => {
     setShowAnimals((prev) => ({ ...prev, [id]: !prev[id] }))
   }
 
-  const toggleShowAddAnimal = (id: string) => {
-    setShowAddAnimal((prev) => ({ ...prev, [id]: !prev[id] }))
+  const handleGetClients = async () => {
+    const newClients = await getClients()
+    setClients(newClients)
   }
 
   return (
@@ -116,8 +125,7 @@ export function ClientList({ clients }: ClientListProps) {
 
               <AddAnimalDialog
                 idOwner={client.id}
-                isOpen={showAddAnimal[client.id.toString()]}
-                onClose={() => toggleShowAddAnimal(client.id.toString())}
+                getClients={() => handleGetClients()}
               />
             </TableCell>
 
@@ -148,17 +156,89 @@ export function AnimalsList({ animals }: AnimalsListProps) {
           <TableHead>ID</TableHead>
           <TableHead>Name</TableHead>
           <TableHead>Type</TableHead>
+          <TableHead>Actions</TableHead>
         </TableRow>
       </TableHeader>
+
       <TableBody>
         {animals.map((animal) => (
           <TableRow key={animal.id.toString()}>
             <TableCell>{animal.id.toString()}</TableCell>
             <TableCell>{animal.name}</TableCell>
             <TableCell>{animal.type}</TableCell>
+            <TableCell>
+              <PrescribeAnimalMedicineDialog
+                idAnimal={animal.id}
+                getClients={() => { }}
+              />
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>
     </Table>
   )
+}
+
+export function PrescribeAnimalMedicineDialog({
+  idAnimal,
+  getClients
+}: { idAnimal: UUID, getClients: () => void }) {
+  const [medicines, setMedicines] = useState<Medicine[]>([]);
+  const [selectedMedicine, setSelectedMedicine] = useState<Medicine | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      getMedicines().then(meds => {
+        setMedicines(meds);
+        setSelectedMedicine(meds.length > 0 ? meds[0] : null);
+      });
+    }
+  }, [isOpen]);
+
+  const handlePrescribeMedicine = async (e: React.FormEvent) => {
+
+    e.preventDefault();
+
+    if (!selectedMedicine) return;
+
+    prescribeMedicine(idAnimal, selectedMedicine.id).then(() => {
+      getClients();
+      setIsOpen(false);
+    });
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button>Prescribe Medicine</Button>
+      </DialogTrigger>
+      <DialogContent className="p-6">
+        <DialogHeader>
+          <DialogTitle>Prescribe Medicine</DialogTitle>
+        </DialogHeader>
+
+        <form className="flex flex-col space-y-4 gap-2" onSubmit={handlePrescribeMedicine}>
+          <label className="flex flex-col">
+            <span>Medicine</span>
+
+            <select
+              className="border p-2 rounded"
+              value={selectedMedicine?.id || ""}
+              onChange={(e) => setSelectedMedicine(medicines.find(m => m.id === e.target.value) ?? null)}
+            >
+              {medicines.map(medicine => (
+                <option key={medicine.id} value={medicine.id}>
+                  {medicine.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <Button type="submit" className="mt-2" disabled={!selectedMedicine}>
+            Prescribe Medicine
+          </Button>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
 }

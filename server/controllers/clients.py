@@ -6,8 +6,6 @@ from models.clients import Client
 
 router = APIRouter()
 
-print("Clients router loaded")
-
 
 @router.post("/", response_model=Client)
 def create_client(client: Client):

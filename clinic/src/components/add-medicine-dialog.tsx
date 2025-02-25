@@ -41,7 +41,7 @@ export function AddMedicineDialog() {
         <DialogHeader>
           <DialogTitle>Add New Medicine</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex flex-col space-y-4 gap-2">
           <div className="space-y-2">
             <Label htmlFor="name">Name</Label>
             <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
@@ -57,6 +57,7 @@ export function AddMedicineDialog() {
               required
             />
           </div>
+          
           <Button type="submit" className="w-full">
             Add Medicine
           </Button>
