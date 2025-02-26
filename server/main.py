@@ -1,4 +1,3 @@
-# main.py
 from fastapi import FastAPI, HTTPException
 from controllers import animals, clients, medicines
 from fastapi.middleware.cors import CORSMiddleware

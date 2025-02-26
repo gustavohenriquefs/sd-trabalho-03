@@ -1,4 +1,3 @@
-# controllers/medicines.py
 from fastapi import APIRouter, HTTPException
 from uuid import UUID
 from typing import List
@@ -21,8 +20,6 @@ def remove_medicine(medicine_id: UUID):
     clinic.remove_medicine(medicine_id)
     return {"message": "Medicine removed successfully"}
 
-
-# prescribe one unit of medicine to an animal
 @router.post("/{medicine_id}/animals/{animal_id}")
 def prescribe_medicine(animal_id: UUID, medicine_id: UUID):
     clinic.prescribe_medicine(animal_id, medicine_id, 1)
